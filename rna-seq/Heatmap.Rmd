@@ -1,0 +1,18 @@
+#TPM calculation
+info <- readRDS("GRCm39.refseq_select.info.rds")
+
+calc_tpm <- function(raw_counts, info){
+rpk <- raw_counts / (info[rownames(raw_counts), "length"] / 1e3)
+t(t(rpk) / (colSums(rpk)/1e6))
+}
+
+tpm <- calc_tpm(readRDS('241205.counts.rds'), info)
+tpm_collapsed <- tpm %>%
+rowMeans_by_group(c("A1.KO", "G10.KO", "E14.WT"), day_cols = c("d0","d4"))
+
+#Heatmap
+pluripotency_markers <- c('Pou5f1','Tbx3','Klf4','Sall4','Nr0b1','Nanog','Sox2','Snai1','Smad1','Smad5','Smad9','Snai2')
+pheatmap(tpm_collapsed[pluripotency_markers, ],
+cluster_cols = F, cluster_rows = F,
+color = colorRampPalette(rev(brewer.pal(5,"RdBu")))(100),
+scale = "row")

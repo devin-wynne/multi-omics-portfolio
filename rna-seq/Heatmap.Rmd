@@ -1,4 +1,16 @@
+---
+title: "Heatmap Figure"
+output: html_document
+date: "2025-12-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RColorBrewer)
+```
+
 #TPM calculation
+read.counts <- readRDS('241205.counts.rds')
 info <- readRDS("GRCm39.refseq_select.info.rds")
 
 calc_tpm <- function(raw_counts, info){

@@ -1,0 +1,21 @@
+---
+title: "VennDiagram Figure"
+output: html_document
+date: "2024-12-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+raw_counts <- readRDS('241209.counts.rds')
+```
+
+#Define gene sets
+SCMH1_up <- DE_G10_E14$geneID[DE_G10_E14$padj < 0.05 & DE_G10_E14[[2]] > 0]
+SCMH1_down <- DE_G10_E14$geneID[DE_G10_E14$padj < 0.05 & DE_G10_E14[[2]] < 0]
+
+fit <- euler(c("SCMH1_up" = length(SCMH1_up), "SCMH1_down" = length(SCMH1_down)))
+plot(fit, quantities = TRUE)

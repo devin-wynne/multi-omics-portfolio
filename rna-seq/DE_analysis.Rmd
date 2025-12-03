@@ -16,7 +16,7 @@ theme_set(theme_classic())
 setwd("/home/devin/data/SCMH1/E3/")
 
 #Load counts and define scheme
-counts <- readRDS("/home/emily/data/EJ17/data/counts/RNA.counts.refseq_select.rds")
+counts <- readRDS("/home/devin/SCMH1/E3/counts/RNA.counts.refseq_select.rds")
 counts_keep <- counts[, grepl("e3", colnames(counts))][, 1:18]
 
 scheme_cells <- data.frame(

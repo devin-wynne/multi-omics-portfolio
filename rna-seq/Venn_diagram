@@ -4,18 +4,28 @@ output: html_document
 date: "2024-12-09"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+library(tidyverse)
+library(eulerr)
+
 
 
 ```{r}
 raw_counts <- readRDS('241209.counts.rds')
 ```
+#---------------------------
+# Define up- and down-regulated genes from DESeq2 results
+#---------------------------
+get_DE_gene_sets <- function(DE_results, lfc_col = 2, padj_thresh = 0.05) {
+  up <- DE_results$geneID[DE_results$padj < padj_thresh & DE_results[[lfc_col]] > 0]
+  down <- DE_results$geneID[DE_results$padj < padj_thresh & DE_results[[lfc_col]] < 0]
+  list(up = up, down = down)
+}
 
-#Define gene sets
-SCMH1_up <- DE_G10_E14$geneID[DE_G10_E14$padj < 0.05 & DE_G10_E14[[2]] > 0]
-SCMH1_down <- DE_G10_E14$geneID[DE_G10_E14$padj < 0.05 & DE_G10_E14[[2]] < 0]
-
-fit <- euler(c("SCMH1_up" = length(SCMH1_up), "SCMH1_down" = length(SCMH1_down)))
-plot(fit, quantities = TRUE)
+#---------------------------
+# Make Euler diagram from gene sets
+#---------------------------
+plot_euler <- function(gene_sets) {
+  counts <- c("Up-regulated" = length(gene_sets$up), "Down-regulated" = length(gene_sets$down))
+  fit <- euler(counts)
+  plot(fit, quantities = TRUE)
+}

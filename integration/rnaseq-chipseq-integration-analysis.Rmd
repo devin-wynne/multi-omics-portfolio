@@ -1,30 +1,52 @@
-derepressed_shared_targets <- intersect(chipseq_genes, sig_d4_DE.KO_WT_derepressed)
-repressed_shared_targets <- intersect(chipseq_genes, sig_d4_DE.KO_WT_repressed)
-unchanged_targets <- setdiff(chipseq_genes, sig_d4_DE.KO_WT)
-
-DE.KO_WT.frame <- d4_DE.KO_WT
-DE.KO_WT.frame$highlight <- "Not a target"
-DE.KO_WT.frame$highlight[d4_DE.KO_WT$geneID %in% derepressed_shared_targets] <- 'Derepressed SCMH1 Target'
-DE.KO_WT.frame$highlight[d4_DE.KO_WT$geneID %in% repressed_shared_targets] <- 'Repressed SCMH1 Target'
-DE.KO_WT.frame$highlight[d4_DE.KO_WT$geneID %in% unchanged_targets] <- 'Unchanged SCMH1 Target'
-
-DE.KO_WT.frame$highlight <- factor(DE.KO_WT.frame$highlight, levels = c("Not a target",'Unchanged SCMH1 Target', "Derepressed SCMH1 Target", "Repressed SCMH1 Target"))
-DE.KO_WT.frame$baseMean <- log2(DE.KO_WT.frame$baseMean)
-colnames(DE.KO_WT.frame)[2]  <- 'fc'
-#MA plot
-ggplot(DE.KO_WT.frame, aes(x = baseMean, y = fc, color = highlight)) +
-  geom_point(data = subset(DE.KO_WT.frame, highlight == "Not a target"), color = "gray", alpha = 0.5) +  
-  geom_point(data = subset(DE.KO_WT.frame, highlight != "Not a target"), alpha = 0.8) + 
-  scale_color_manual(values = c('darkgray',"blue", "red")) + 
-  geom_hline(yintercept = 0, linetype = "dashed") +  
-  labs(
-    x = "log2(Expression)",
-    y = "log2(Fold Change)",
-    title = "SCMH1 Targets + DE at D4"
-  ) +
-  theme_minimal() +
-  theme(legend.title = element_blank()) +
-  xlim(0, 15)
-
-
+# -------------------------------
+# Function to categorize genes
+# -------------------------------
+categorize_targets <- function(chipseq_genes, DE_genes, derepressed, repressed) {
+  
+  derepressed_targets <- intersect(chipseq_genes, derepressed)
+  repressed_targets <- intersect(chipseq_genes, repressed)
+  unchanged_targets <- setdiff(chipseq_genes, DE_genes$geneID)
+  
+  DE_frame <- DE_genes
+  DE_frame$highlight <- "Not a target"
+  DE_frame$highlight[DE_frame$geneID %in% derepressed_targets] <- "Derepressed SCMH1 Target"
+  DE_frame$highlight[DE_frame$geneID %in% repressed_targets] <- "Repressed SCMH1 Target"
+  DE_frame$highlight[DE_frame$geneID %in% unchanged_targets] <- "Unchanged SCMH1 Target"
+  
+  DE_frame$highlight <- factor(DE_frame$highlight, 
+                               levels = c("Not a target",
+                                          "Unchanged SCMH1 Target",
+                                          "Derepressed SCMH1 Target",
+                                          "Repressed SCMH1 Target"))
+  
+  DE_frame$baseMean <- log2(DE_frame$baseMean + 1) # add pseudo-count to avoid log2(0)
+  colnames(DE_frame)[colnames(DE_frame) == "log2FoldChange"] <- "fc"  # rename fold change column
+  return(DE_frame)
 }
+
+# -------------------------------
+# Function to make MA plot
+# -------------------------------
+plot_MA <- function(DE_frame, xlim_vals = c(0, 15), title = "SCMH1 Targets + DE at D4") {
+  ggplot(DE_frame, aes(x = baseMean, y = fc, color = highlight)) +
+    geom_point(data = subset(DE_frame, highlight == "Not a target"), color = "gray", alpha = 0.5) +
+    geom_point(data = subset(DE_frame, highlight != "Not a target"), alpha = 0.8) +
+    scale_color_manual(values = c("darkgray", "blue", "red", "green")) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    labs(x = "log2(Expression)", y = "log2(Fold Change)", title = title) +
+    theme_minimal() +
+    theme(legend.title = element_blank()) +
+    xlim(xlim_vals)
+}
+
+# -------------------------------
+# Apply functions
+# -------------------------------
+DE_KO_WT_frame <- categorize_targets(
+  chipseq_genes = chipseq_genes,
+  DE_genes = d4_DE.KO_WT,
+  derepressed = sig_d4_DE.KO_WT_derepressed,
+  repressed = sig_d4_DE.KO_WT_repressed
+)
+
+plot_MA(DE_KO_WT_frame)

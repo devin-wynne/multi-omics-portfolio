@@ -1,0 +1,93 @@
+---
+title: "Binding Analysis"
+output: html_document
+date: "2025-03-16"
+---
+
+
+library(GenomicRanges)
+library(pheatmap)
+library(viridis)
+
+
+# -------------------------------
+# Function to plot heatmaps
+# -------------------------------
+plot_chip_heatmap <- function(mat, main_title, breaks = NULL, scale_color_func = NULL, color = viridis(100)) {
+  if (!is.null(scale_color_func)) {
+    mat <- scale_color_func(mat)
+  }
+  
+  pheatmap(mat,
+           cluster_rows = FALSE,
+           cluster_cols = FALSE,
+           scale = "none",
+           color = color,
+           breaks = breaks,
+           show_rownames = FALSE,
+           show_colnames = FALSE,
+           main = main_title)
+}
+
+# -------------------------------
+# Function to clean and sort matrices
+# -------------------------------
+prepare_matrix <- function(mat) {
+  mat <- mat[!is.na(rowSums(mat)), ]
+  mat[order(-rowSums(mat)), ]
+}
+
+# -------------------------------
+# Load computeMatrix results
+# -------------------------------
+d0_matrix <- process_computeMat("matrix_d0.WT.SCMH1.tsv")
+d4_matrix <- process_computeMat("matrix_d4.WT.SCMH1.tsv")
+
+# -------------------------------
+# Prepare Day 0 matrices
+# -------------------------------
+d0_samples <- list(
+  "d0_RING1B_WT"  = d0_matrix$WT.d0.RING1B.e6.IP.norm,
+  "d0_RING1B_KO"  = d0_matrix$S1KO.d0.RING1B.e6.IP.norm,
+  "d0_BMI1_WT"    = d0_matrix$WT.d0.BMI1.e6.IP.norm,
+  "d0_BMI1_KO"    = d0_matrix$S1KO.d0.BMI1.e6.IP.norm,
+  "d0_SCMH1_WT"   = d0_matrix$WT.d0.SCMH1.e6.IP.norm,
+  "d0_SCMH1_KO"   = d0_matrix$S1KO.d0.SCMH1.e6.IP.norm
+)
+
+d0_samples <- lapply(d0_samples, prepare_matrix)
+
+# -------------------------------
+# Plot Day 0 heatmaps
+# -------------------------------
+plot_chip_heatmap(d0_samples$d0_RING1B_WT, "Day 0 WT RING1B", breaks = seq(0, 10, length.out = 100))
+plot_chip_heatmap(d0_samples$d0_BMI1_WT, "Day 0 WT BMI1", breaks = seq(0, 10, length.out = 100))
+plot_chip_heatmap(d0_samples$d0_SCMH1_WT, "Day 0 WT SCMH1", breaks = seq(0, 2, length.out = 100))
+plot_chip_heatmap(d0_samples$d0_SCMH1_KO, "Day 0 KO SCMH1", breaks = seq(0, 10, length.out = 101))
+
+# -------------------------------
+# Prepare Day 4 matrices
+# -------------------------------
+d4_samples <- list(
+  "d4_RING1B_WT"  = d4_matrix$WT.d4.RING1B.IP.norm,
+  "d4_RING1B_KO"  = d4_matrix$S1KO.d4.RING1B.IP.norm,
+  "d4_BMI1_WT"    = d4_matrix$WT.d4.BMI1.IP.norm,
+  "d4_BMI1_KO"    = d4_matrix$S1KO.d4.BMI1.e1.IP.norm,
+  "d4_SCMH1_WT"   = d4_matrix$WT.d4.SCMH1.IP.norm,
+  "d4_SCMH1_KO"   = d4_matrix$S1KO.d4.SCMH1.IP.norm
+)
+
+d4_samples <- lapply(d4_samples, prepare_matrix)
+
+# -------------------------------
+# Plot Day 4 heatmaps
+# -------------------------------
+plot_chip_heatmap(d4_samples$d4_RING1B_WT, "Day 4 WT RING1B", breaks = seq(0, 0.8, length.out = 100))
+plot_chip_heatmap(d4_samples$d4_BMI1_WT, "Day 4 WT BMI1", breaks = seq(-4, 4, length.out = 101))
+plot_chip_heatmap(d4_samples$d4_SCMH1_WT, "Day 4 WT SCMH1", breaks = seq(-0.1, 4, length.out = 100), scale_color_func = scale_color)
+plot_chip_heatmap(d4_samples$d4_SCMH1_KO, "Day 4 KO SCMH1", breaks = seq(0, 4, length.out = 100)_
+
+
+
+
+```

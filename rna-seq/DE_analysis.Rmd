@@ -4,42 +4,54 @@ output: html_document
 date: "2025-11-26"
 ---
 
-```{r setup, message=FALSE, warning=FALSE}
 library(DESeq2)
 library(ggplot2)
 library(pheatmap)
 library(RColorBrewer)
 library(eulerr)
 library(tidyverse)
-
 theme_set(theme_classic())
-setwd("/home/devin/data/SCMH1/E3/")
 
+# -------------------------------
 #Load counts and define scheme
-counts <- readRDS("/home/devin/SCMH1/E3/counts/RNA.counts.refseq_select.rds")
-counts_keep <- counts[, grepl("e3", colnames(counts))][, 1:18]
-
-scheme_cells <- data.frame(
-cells = rep(c("A1","E14","G10"), each = 6),
-day   = rep(c("d0","d2","d4"), times = 6)
-)
-
-#Create DESeq2 dataset and run DE analysis
-dds <- DESeqDataSetFromMatrix(counts_keep, scheme_cells, design = ~day + cells + day:cells)
-dds <- DESeq(dds)
-counts_norm <- counts(dds, normalized = TRUE)
-
-#Function to get DE results
-get_DE <- function(dds, contrast, sample1, sample2, label1, label2){
-res <- as.data.frame(results(dds, contrast = c(contrast, sample1, sample2)))
-res$geneID <- rownames(res)
-colnames(res)[2] <- paste0("log2(", label1, ".vs.", label2, ")")
-res[order(res$padj, res$pval, -abs(res[,2])), ]
+# -------------------------------
+load_counts <- function(filepath, pattern = "e3") {
+  counts <- readRDS(filepath)
+  counts_keep <- counts[, grepl(pattern, colnames(counts))]
+  return(counts_keep)
 }
+
+make_scheme <- function() {
+  data.frame(
+    cells = rep(c("A1","E14","G10"), each = 6),
+    day   = rep(c("d0","d2","d4"), times = 6)
+  )
+}
+
+# -------------------------------
+#Create DESeq2 dataset and run DE analysis
+# -------------------------------
+
+run_DESeq <- function(counts_keep, scheme) {
+  dds <- DESeqDataSetFromMatrix(counts_keep, scheme, design = ~day + cells + day:cells)
+  dds <- DESeq(dds)
+  return(dds)
+}
+
+get_DE <- function(dds, contrast, sample1, sample2, label1, label2) {
+  res <- as.data.frame(results(dds, contrast = c(contrast, sample1, sample2)))
+  res$geneID <- rownames(res)
+  colnames(res)[2] <- paste0("log2(", label1, ".vs.", label2, ")")
+  res[order(res$padj, res$pval, -abs(res[,2])), ]
+}
+
 
 DE_G10_E14 <- get_DE(dds, "cells", "G10", "E14", "G10", "E14")
 
+# -------------------------------
 #Make MA plot
+# -------------------------------
+
 plot_MA <- function(res, lfc_col){
 df <- data.frame(
 baseMean = log2(res$baseMean),
@@ -55,6 +67,10 @@ ylab(lfc_col) + geom_hline(yintercept = 1, lty = 2)
 
 plot_MA(DE_G10_E14, "log2(G10.vs.E14)")
 
+# -------------------------------
 #Make PCA plot
-vst_counts <- vst(dds, blind = TRUE)
-plotPCA(vst_counts, intgroup = "cells")
+# -------------------------------
+plot_PCA_vst <- function(dds, intgroup = "cells") {
+  vst_counts <- vst(dds, blind = TRUE)
+  plotPCA(vst_counts, intgroup = intgroup)
+}

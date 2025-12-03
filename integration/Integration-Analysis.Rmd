@@ -54,4 +54,7 @@ DE_KO_WT_frame <- categorize_targets(
   repressed = sig_d4_DE.KO_WT_repressed
 )
 
+# -------------------------------
+# MA plot
+# -------------------------------
 plot_MA(DE_KO_WT_frame)

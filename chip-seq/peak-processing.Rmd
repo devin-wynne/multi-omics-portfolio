@@ -3,15 +3,14 @@ title: "ChIP-seq Peak Processing and Annotation"
 output: html_document
 date: "2025-02-07"
 ---
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
 
 library(GenomicRanges)
 library(devtools)
 library(bedr)
 
-```r
-```{r}
+
+```
 
 # Read peak files into GRanges objects
 d0_WT_BMI1   <- bed_to_granges("WT_d0_BMI1_peaks.narrowPeak")
@@ -49,7 +48,7 @@ shared_targets_BMI1_SCMH1 <- subsetByOverlaps(d4.WT.SCMH1.peaks, d4.WT.BMI1.minu
 shared_targets_RING1B_SCMH1 <- subsetByOverlaps(d4.WT.SCMH1.peaks, d4.WT.RING1B.minuscontrol) 
 shared_BMI_RING1B_SCMH1 <- subsetByOverlaps(shared_targets_BMI1_SCMH1, shared_targets_RING1B_SCMH1) 
 
-annotation<-import.gff("/home/emily/for_others/devin/GRCm39.refseq_select.gtf")
+annotation<-import.gff("GRCm39.refseq_select.gtf")
 
 #Map peaks to nearest promoter
 

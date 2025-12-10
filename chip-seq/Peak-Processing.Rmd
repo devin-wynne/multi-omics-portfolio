@@ -1,0 +1,128 @@
+---
+title: "ChIP-seq Peak Processing and Annotation"
+output: html_document
+date: "2025-02-07"
+---
+
+
+library(GenomicRanges)
+library(rtracklayer)
+library(devtools)
+library(bedr)
+
+
+```
+# --------------------------------
+# Read Narrowpeak files into GRanges 
+# --------------------------------
+
+read_peaks <- function(filename) {
+  peaks <- rtracklayer::import.bed(filename, trackLine = FALSE)
+  return(peaks)
+}
+
+file_map <- list(
+  d0_WT_BMI1   = "WT_d0_BMI1_peaks.narrowPeak",
+  d0_WT_RING1B = "WT_d0_RING1B_peaks.narrowPeak",
+  d0_WT_SCMH1  = "WT_d0_SCMH1_peaks.narrowPeak",
+
+  d0_KO_BMI1   = "KO_d0_BMI1_peaks.narrowPeak",
+  d0_KO_RING1B = "KO_d0_RING1B_peaks.narrowPeak",
+  d0_KO_SCMH1  = "KO_d0_SCMH1_peaks.narrowPeak",
+
+  d4_WT_BMI1   = "WT_d4_BMI1_peaks.narrowPeak",
+  d4_WT_RING1B = "WT_d4_RING1B_peaks.narrowPeak",
+  d4_WT_SCMH1  = "WT_d4_SCMH1_peaks.narrowPeak",
+  d4_WT_IgG    = "WT_d4_IgG_control.narrowPeak",
+
+  d4_KO_BMI1   = "KO_d4_BMI1_peaks.narrowPeak",
+  d4_KO_RING1B = "KO_d4_RING1B_peaks.narrowPeak",
+  d4_KO_SCMH1  = "KO_d4_SCMH1_peaks.narrowPeak",
+  d4_KO_IgG    = "KO_d4_IgG_control.narrowPeak"
+)
+
+# Read all peaks into a single list
+peak_list <- lapply(file_map, read_peaks)
+
+# --------------------------------
+#Remove IgG background peaks
+# --------------------------------
+
+d4_KO_BMI1_minuscontrol    <- subsetByOverlaps(d4_KO_BMI1, d4_KO_IgG, invert = TRUE)
+d4_WT_BMI1_minuscontrol    <- subsetByOverlaps(d4_WT_BMI1, d4_WT_IgG, invert = TRUE)
+d4_KO_RING1B_minuscontrol  <- subsetByOverlaps(d4_KO_RING1B, d4_KO_IgG, invert = TRUE)
+d4_WT_RING1B_minuscontrol  <- subsetByOverlaps(d4_WT_RING1B, d4_WT_IgG, invert = TRUE)
+d4_KO_SCMH1_minuscontrol   <- subsetByOverlaps(d4_KO_SCMH1, d4_KO_IgG, invert = TRUE)
+d4_WT_SCMH1_minuscontrol   <- subsetByOverlaps(d4_WT_SCMH1, d4_WT_IgG, invert = TRUE)
+
+# --------------------------------
+#Identify WT specific peaks
+# --------------------------------
+
+d0_WT_SCMH1_peaks <- subsetByOverlaps(d0_WT_SCMH1, d0_KO_SCMH1, invert = TRUE)
+d0_WT_SCMH1_peaks <- subsetByOverlaps(d0_WT_SCMH1_peaks, d4_KO_SCMH1_minuscontrol, invert = TRUE)
+
+d4_WT_SCMH1_peaks <- subsetByOverlaps(d4_WT_SCMH1_minuscontrol, d4_KO_SCMH1_minuscontrol, invert = TRUE)
+d4_WT_SCMH1_peaks <- subsetByOverlaps(d4_WT_SCMH1_peaks, d0_KO_SCMH1, invert = TRUE)
+d0.WT.SCMH1.peaks <- subsetByOverlaps(subsetByOverlaps(d0.WT.SCMH1, d0.S1KO.SCMH1, invert = T), d4.S1KO.SCMH1.minuscontrol,invert=T)
+d4.WT.SCMH1.peaks <- subsetByOverlaps(subsetByOverlaps(d4.WT.SCMH1.minuscontrol, d4.S1KO.SCMH1.minuscontrol, invert = T), d0.S1KO.SCMH1,invert=T)
+
+# --------------------------------
+#Identify shared binding targets (SCMH1 and RING1B/BMI1)
+# --------------------------------
+
+# Co-localization analysis with other PRC1 components on the d4 WT SCMH1 specific peaks
+shared_targets_BMI1_SCMH1   <- subsetByOverlaps(d4_WT_SCMH1_peaks, d4_WT_BMI1_minuscontrol)
+shared_targets_RING1B_SCMH1 <- subsetByOverlaps(d4_WT_SCMH1_peaks, d4_WT_RING1B_minuscontrol)
+
+# Core shared targets (Co-bound by SCMH1, BMI1, and RING1B)
+shared_BMI_RING1B_SCMH1 <- subsetByOverlaps(shared_targets_BMI1_SCMH1, d4_WT_RING1B_minuscontrol)
+
+# --------------------------------
+#Map peaks to nearest promoter
+# --------------------------------
+
+annotation<-import.gff("GRCm39.refseq_select.gtf")
+
+
+annotation.transcript=annotation[annotation$type=="transcript"]
+annotation.plus=annotation.transcript[strand(annotation.transcript)=="+"]
+annotation.minus=annotation.transcript[strand(annotation.transcript)=="-"]
+
+#Promoters are defined as regions +/- 2.5 kb from TSS
+window=2500
+#Create promoter regions
+promoter=GRanges(seqnames=c(seqnames(annotation.plus),seqnames(annotation.minus)),
+                 ranges=IRanges(start=c(start(annotation.plus)-window,end(annotation.minus)-window),
+                                end=c(start(annotation.plus)+window,end(annotation.minus)+window)),
+                 strand=c(rep("+",length(annotation.plus)),rep("-",length(annotation.minus))),
+                 gene=c(annotation.plus$gene,annotation.minus$gene))
+
+
+near_promoter <- distanceToNearest(shared_BMI_RING1B_SCMH1,promoter)
+distances <- mcols(near_promoter)$distance
+
+#Maximum distance threshold for peak-to-gene assignment
+max_distance <- 50000  
+
+# Find nearest promoters for shared target peaks
+nearest_promoters <- distanceToNearest(shared_BMI_RING1B_SCMH1, promoters)
+peak_distances <- mcols(nearest_promoters)$distance
+
+# Filter by distance threshold
+nearest_promoters_filtered <- nearest_promoters[peak_distances < max_distance]
+
+# Final list of targets (SCMH1/BMI1/RING1B)
+chipseq_genes <- promoter$gene[subjectHits(near_promoter_filtered)]
+
+# Map RING1B targets to nearest promoter for comparison
+near_promoter_ring1b <- distanceToNearest(d4_WT_RING1B_minuscontrol, promoter)
+distances_ring1b <- mcols(near_promoter_ring1b)$distance
+
+# Filter RING1B targets by distance threshold
+# Corrected variable name consistency
+near_promoter_ring1b_filtered <- near_promoter_ring1b[distances_ring1b < max_distance]
+
+# Final list of targets (RING1B only)
+ring1b_genes <- promoter$gene[subjectHits(near_promoter_ring1b_filtered)]
+

@@ -1,6 +1,6 @@
 # Multi-Omics Portfolio
 
-This repository contains the code and workflow I used for a project integrating **RNA-seq** and **ChIP-seq** data to explore the role of SCMH1 in PRC1 and its effects on gene expression.  
+This repository contains the code and workflow I used for a project integrating **RNA-seq** and **ChIP-seq** data to explore the role of Scmh1 in PRC1 and its effects on gene expression.  
 
 ---
 
@@ -21,7 +21,9 @@ This repository contains the code and workflow I used for a project integrating 
 
 ## 3. RNA-seq + ChIP-seq Integration
 - Matched differentially expressed genes with nearby ChIP-seq peaks  
-- Generated integrated plots (see `figures/`)  
+
+
+All plots can be found in `figures/`
 
 ---
 
